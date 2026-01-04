@@ -82,6 +82,13 @@ const translations = {
     trashEmptied: 'Корзина очищена',
     deletedAt: 'Удалено',
     expiresAt: 'Истекает',
+    // Categories
+    categoryWork: 'Работа',
+    categoryStudy: 'Учеба',
+    categoryHealth: 'Здоровье',
+    categoryHome: 'Дом',
+    categoryDevelopment: 'Личное развитие',
+    categoryFinance: 'Финансы',
     // Placeholders
     loginPlaceholder: 'Введите имя пользователя',
     passwordPlaceholder: 'Введите пароль',
@@ -167,6 +174,13 @@ const translations = {
     trashEmptied: 'Trash emptied',
     deletedAt: 'Deleted',
     expiresAt: 'Expires',
+    // Categories
+    categoryWork: 'Work',
+    categoryStudy: 'Study',
+    categoryHealth: 'Health',
+    categoryHome: 'Home',
+    categoryDevelopment: 'Personal Development',
+    categoryFinance: 'Finance',
     // Placeholders
     loginPlaceholder: 'Enter username',
     passwordPlaceholder: 'Enter password',
@@ -286,6 +300,14 @@ function updateUILanguage() {
     emptyTrashText.textContent = t('emptyTrash');
   }
 
+  // Update categories
+  document.querySelector('.category-work').textContent = t('categoryWork');
+  document.querySelector('.category-study').textContent = t('categoryStudy');
+  document.querySelector('.category-health').textContent = t('categoryHealth');
+  document.querySelector('.category-home').textContent = t('categoryHome');
+  document.querySelector('.category-development').textContent = t('categoryDevelopment');
+  document.querySelector('.category-finance').textContent = t('categoryFinance');
+
   // Update trash button title
   const trashBtn = document.getElementById('trash-btn');
   if (trashBtn) {
@@ -375,6 +397,7 @@ let currentEditTaskId = null;
 // Фильтры и сортировка
 let currentFilter = localStorage.getItem('task-filter') || 'all'; // all, active, completed
 let sortDirection = localStorage.getItem('sort-direction') || 'desc'; // asc, desc
+let currentCategory = localStorage.getItem('task-category') || null; // work, study, health, home, development, finance, null (all)
 let allTasks = []; // Храним все задачи для фильтрации
 
 // ==================== API ФУНКЦИИ ====================
@@ -567,6 +590,11 @@ function applyFiltersAndSort() {
     filtered = filtered.filter(task => task.completed);
   }
 
+  // Применяем фильтр по категории
+  if (currentCategory) {
+    filtered = filtered.filter(task => task.category === currentCategory);
+  }
+
   // Сортируем по дате создания
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at);
@@ -604,6 +632,50 @@ function updateFilterButtons() {
   if (sortIcon) {
     sortIcon.textContent = sortDirection === 'asc' ? '↑' : '↓';
   }
+}
+
+// ==================== CATEGORY FILTER FUNCTIONS ====================
+
+function toggleCategoryDropdown() {
+  const categoryMenu = document.getElementById('category-menu');
+  const categoryBtn = document.getElementById('category-btn');
+
+  if (categoryMenu.classList.contains('active')) {
+    categoryMenu.classList.remove('active');
+    categoryBtn.classList.remove('active');
+  } else {
+    categoryMenu.classList.add('active');
+    categoryBtn.classList.add('active');
+  }
+}
+
+function selectCategory(category) {
+  currentCategory = category === currentCategory ? null : category;
+  localStorage.setItem('task-category', currentCategory || '');
+
+  // Update menu items
+  document.querySelectorAll('.category-menu-item').forEach(item => {
+    item.classList.remove('selected');
+    if (item.dataset.category === currentCategory) {
+      item.classList.add('selected');
+    }
+  });
+
+  // Update button state
+  const categoryBtn = document.getElementById('category-btn');
+  if (currentCategory) {
+    categoryBtn.classList.add('active');
+  } else {
+    categoryBtn.classList.remove('active');
+  }
+
+  // Close dropdown
+  const categoryMenu = document.getElementById('category-menu');
+  categoryMenu.classList.remove('active');
+  categoryBtn.classList.remove('active');
+
+  // Apply filter
+  applyFiltersAndSort();
 }
 
 // ==================== COLLAPSE/EXPAND FUNCTIONS ====================
@@ -1251,8 +1323,42 @@ document.addEventListener("DOMContentLoaded", async function() {
     toggleTasksBtn.addEventListener('click', toggleTasksVisibility);
   }
 
+  // Добавляем listeners для категорий
+  const categoryBtn = document.getElementById('category-btn');
+  if (categoryBtn) {
+    categoryBtn.addEventListener('click', toggleCategoryDropdown);
+  }
+
+  document.querySelectorAll('.category-menu-item').forEach(item => {
+    item.addEventListener('click', function() {
+      selectCategory(this.dataset.category);
+    });
+  });
+
+  // Закрытие dropdown по клику вне его
+  document.addEventListener('click', function(e) {
+    const categoryDropdown = document.querySelector('.category-dropdown');
+    if (categoryDropdown && !categoryDropdown.contains(e.target)) {
+      const categoryMenu = document.getElementById('category-menu');
+      const categoryBtn = document.getElementById('category-btn');
+      categoryMenu.classList.remove('active');
+      categoryBtn.classList.remove('active');
+    }
+  });
+
   // Восстанавливаем состояние свернутых задач
   restoreTasksCollapsedState();
+
+  // Восстанавливаем состояние категории
+  if (currentCategory) {
+    document.querySelectorAll('.category-menu-item').forEach(item => {
+      if (item.dataset.category === currentCategory) {
+        item.classList.add('selected');
+      }
+    });
+    const categoryBtn = document.getElementById('category-btn');
+    categoryBtn.classList.add('active');
+  }
 
   const savedToken = localStorage.getItem('auth-token');
   const savedUser = localStorage.getItem('current-user');

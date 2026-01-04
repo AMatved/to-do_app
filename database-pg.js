@@ -34,6 +34,7 @@ async function initializeDatabase() {
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         text TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
+        category VARCHAR(20) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -46,6 +47,20 @@ async function initializeDatabase() {
       ON tasks(user_id)
     `);
     console.log('✅ Index created');
+
+    // Migration: add category column if it doesn't exist
+    try {
+      await client.query(`
+        ALTER TABLE tasks
+        ADD COLUMN IF NOT EXISTS category VARCHAR(20) DEFAULT NULL
+      `);
+      console.log('✅ Category column added to tasks table');
+    } catch (err) {
+      // Column might already exist, ignore error
+      if (!err.message.includes('already exists')) {
+        console.error('Error adding category column:', err.message);
+      }
+    }
 
     // Create deleted_tasks table (trash)
     await client.query(`
@@ -118,31 +133,49 @@ const updateLastLogin = async (userId) => {
 
 const getUserTasks = async (userId) => {
   const result = await pool.query(
-    `SELECT id, text, completed, created_at, updated_at
+    `SELECT id, text, completed, category, created_at, updated_at
      FROM tasks WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   );
   return result.rows;
 };
 
-const createTask = async (userId, text) => {
+const createTask = async (userId, text, category = null) => {
   const result = await pool.query(
-    'INSERT INTO tasks (user_id, text) VALUES ($1, $2) RETURNING *',
-    [userId, text]
+    'INSERT INTO tasks (user_id, text, category) VALUES ($1, $2, $3) RETURNING *',
+    [userId, text, category]
   );
   return result.rows[0];
 };
 
 const updateTask = async (taskId, userId, updates) => {
-  const { text, completed } = updates;
+  const { text, completed, category } = updates;
 
-  console.log('database-pg.js updateTask called with:', { taskId, userId, text, completed });
+  console.log('database-pg.js updateTask called with:', { taskId, userId, text, completed, category });
+
+  const fields = [];
+  const values = [];
+  let paramCount = 1;
+
+  if (text !== undefined) {
+    fields.push(`text = $${paramCount++}`);
+    values.push(text);
+  }
+  if (completed !== undefined) {
+    fields.push(`completed = $${paramCount++}`);
+    values.push(completed);
+  }
+  if (category !== undefined) {
+    fields.push(`category = $${paramCount++}`);
+    values.push(category);
+  }
+
+  fields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(taskId, userId);
 
   const result = await pool.query(
-    `UPDATE tasks
-     SET text = $1, completed = $2, updated_at = CURRENT_TIMESTAMP
-     WHERE id = $3 AND user_id = $4`,
-    [text, completed, taskId, userId]
+    `UPDATE tasks SET ${fields.join(', ')} WHERE id = $${paramCount++} AND user_id = $${paramCount++}`,
+    values
   );
 
   console.log('database-pg.js updateTask result rowCount:', result.rowCount);

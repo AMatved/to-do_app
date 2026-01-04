@@ -47,6 +47,7 @@ function initializeDatabase() {
       user_id INTEGER NOT NULL,
       text TEXT NOT NULL,
       completed INTEGER DEFAULT 0,
+      category TEXT DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -66,6 +67,20 @@ function initializeDatabase() {
   `, (err) => {
     if (err) {
       console.error('Error creating index:', err.message);
+    }
+  });
+
+  // Миграция: добавляем поле category если оно не существует
+  db.run(`
+    ALTER TABLE tasks ADD COLUMN category TEXT DEFAULT NULL
+  `, (err) => {
+    if (err) {
+      // Игнорируем ошибку, если колонка уже существует
+      if (!err.message.includes('duplicate column name')) {
+        console.error('Error adding category column:', err.message);
+      }
+    } else {
+      console.log('✅ Category column added to tasks table');
     }
   });
 
@@ -174,7 +189,7 @@ const updateLastLogin = (userId) => {
 const getUserTasks = (userId) => {
   return new Promise((resolve, reject) => {
     db.all(
-      `SELECT id, text, completed, created_at, updated_at
+      `SELECT id, text, completed, category, created_at, updated_at
        FROM tasks WHERE user_id = ? ORDER BY created_at DESC`,
       [userId],
       (err, rows) => {
@@ -186,11 +201,11 @@ const getUserTasks = (userId) => {
 };
 
 // Создать новую задачу
-const createTask = (userId, text) => {
+const createTask = (userId, text, category = null) => {
   return new Promise((resolve, reject) => {
     db.run(
-      'INSERT INTO tasks (user_id, text) VALUES (?, ?)',
-      [userId, text],
+      'INSERT INTO tasks (user_id, text, category) VALUES (?, ?, ?)',
+      [userId, text, category],
       function(err) {
         if (err) reject(err);
         else {
@@ -211,11 +226,29 @@ const createTask = (userId, text) => {
 // Обновить задачу
 const updateTask = (taskId, userId, updates) => {
   return new Promise((resolve, reject) => {
-    const { text, completed } = updates;
+    const { text, completed, category } = updates;
+    const fields = [];
+    const values = [];
+
+    if (text !== undefined) {
+      fields.push('text = ?');
+      values.push(text);
+    }
+    if (completed !== undefined) {
+      fields.push('completed = ?');
+      values.push(completed ? 1 : 0);
+    }
+    if (category !== undefined) {
+      fields.push('category = ?');
+      values.push(category);
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(taskId, userId);
+
     db.run(
-      `UPDATE tasks SET text = ?, completed = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND user_id = ?`,
-      [text, completed ? 1 : 0, taskId, userId],
+      `UPDATE tasks SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
+      values,
       function(err) {
         if (err) reject(err);
         else resolve(this.changes > 0);

@@ -46,7 +46,7 @@ router.post('/', authenticateToken, async (req, res) => {
     console.log('POST /api/tasks - User ID:', req.user.id);
     console.log('POST /api/tasks - Request body:', req.body);
 
-    const { text } = req.body;
+    const { text, category } = req.body;
 
     if (!text || text.trim().length === 0) {
       console.log('POST /api/tasks - Validation failed: empty text');
@@ -59,7 +59,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     console.log('POST /api/tasks - Creating task...');
-    const task = await createTask(req.user.id, text.trim());
+    const task = await createTask(req.user.id, text.trim(), category || null);
     console.log('POST /api/tasks - Task created:', task);
 
     const response = {
@@ -105,7 +105,7 @@ router.delete('/completed', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const taskId = parseInt(req.params.id);
-    const { text, completed } = req.body;
+    const { text, completed, category } = req.body;
 
     console.log('PUT /api/tasks/:id - Task ID:', taskId);
     console.log('PUT /api/tasks/:id - Request body:', req.body);
@@ -125,6 +125,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const updates = {};
     if (text !== undefined) updates.text = text.trim();
     if (completed !== undefined) updates.completed = completed;
+    if (category !== undefined) updates.category = category;
 
     console.log('PUT /api/tasks/:id - Updates to apply:', updates);
 
