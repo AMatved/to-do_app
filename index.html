@@ -1,87 +1,168 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <title>Мой Список Задач</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-
-<!-- ОКНО АВТОРИЗАЦИИ (показывается сначала) -->
-    <div id="auth-container">
-        <div class="auth-box">
-            <h2>Welcome to To-Do List</h2>
-            
-            <!-- Форма входа -->
-            <div id="login-form" class="auth-form active">
-                <h3>Sign In</h3>
-                <input type="text" id="login-username" placeholder="Username" class="auth-input">
-                <input type="password" id="login-password" placeholder="Password" class="auth-input">
-                <button id="login-btn" class="auth-btn">Sign In</button>
-                <p class="auth-switch">Don't have an account? <a href="#" id="go-to-signup">Sign Up</a></p>
-            </div>
-            
-            <!-- Форма регистрации -->
-            <div id="signup-form" class="auth-form">
-                <h3>Sign Up</h3>
-                <input type="text" id="signup-username" placeholder="Choose Username" class="auth-input">
-                <input type="password" id="signup-password" placeholder="Choose Password" class="auth-input">
-                <input type="password" id="signup-confirm" placeholder="Confirm Password" class="auth-input">
-                <button id="signup-btn" class="auth-btn">Create Account</button>
-                <p class="auth-switch">Already have an account? <a href="#" id="go-to-login">Sign In</a></p>
-            </div>
-            
-            <!-- Гость (пропустить) -->
-            <div class="guest-option">
-                <p>Or continue as <a href="#" id="guest-login">Guest</a></p>
-            </div>
-        </div>
-    </div>
- <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ (скрыто до входа) -->
-    <div id="app-container" style="display: none;">
-        <!-- Верхняя панель с приветствием и выходом -->
-        <div id="user-header">
-            <div id="user-info">
-                <span>Welcome, <span id="current-user">Guest</span>!</span>
-            </div>
-            <button id="logout-btn" class="logout-btn">Logout</button>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow - Умный список задач</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Форма авторизации -->
+  <div id="auth-container">
+    <div class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="logo-icon">✓</div>
+          <h1>TaskFlow</h1>
+          <p class="auth-subtitle">Организуйте свои задачи эффективно</p>
         </div>
 
-    <!-- create a container for the todo list -->
-    <div id="todo-container">
-      <!-- todo list header -->
-      <div id="header">
-        <h1>To Do List</h1>
+        <!-- Форма входа -->
+        <div id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-username">Имя пользователя</label>
+            <input type="text" id="login-username" class="form-input" placeholder="Введите имя пользователя" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Пароль</label>
+            <input type="password" id="login-password" class="form-input" placeholder="Введите пароль" autocomplete="current-password">
+          </div>
+          <button id="login-btn" class="btn btn-primary">
+            <span class="btn-text">Войти</span>
+            <span class="btn-loader">Вход...</span>
+          </button>
+          <p class="auth-switch">
+            Нет аккаунта? <a href="#" id="go-to-signup">Зарегистрироваться</a>
+          </p>
+        </div>
+
+        <!-- Форма регистрации -->
+        <div id="signup-form" class="auth-form">
+          <div class="form-group">
+            <label for="signup-username">Имя пользователя</label>
+            <input type="text" id="signup-username" class="form-input" placeholder="Придумайте имя пользователя" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Пароль</label>
+            <input type="password" id="signup-password" class="form-input" placeholder="Минимум 6 символов" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm">Подтвердите пароль</label>
+            <input type="password" id="signup-confirm" class="form-input" placeholder="Повторите пароль" autocomplete="new-password">
+          </div>
+          <button id="signup-btn" class="btn btn-primary">
+            <span class="btn-text">Создать аккаунт</span>
+            <span class="btn-loader">Регистрация...</span>
+          </button>
+          <p class="auth-switch">
+            Уже есть аккаунт? <a href="#" id="go-to-login">Войти</a>
+          </p>
+        </div>
+
+        <div class="guest-option">
+          <p>Или <a href="#" id="guest-login">продолжить как гость</a></p>
+        </div>
       </div>
-
-      <!-- create input box -->
-      <div id="todo-form">
-        <input
-          type="text"
-          class="input-item"
-          name="input_box"
-          id="input-box"
-          placeholder="Add Task"
-        />
-
-        <!-- add button -->
-        <button id="input-button">Add Task</button>
-      </div>
-
-      <!-- task list -->
-      <h2>Task List</h2>
-      <ul id="list-container">
-         <!-- Здесь будут появляться задачи -->
-      </ul>
     </div>
-    <hr />
-<!-- task list counter -->
-<div class="counter-container">
-  <div id="task-counters">
-    Completed: <span id="completed-counter">0</span> | Uncompleted:
-    <span id="uncompleted-counter">0</span>
   </div>
-</div>
-<!-- Подключаем JavaScript В КОНЦЕ -->
-    <script type="text/javascript" src="client.js"></script>
-  </body>
+
+  <!-- Основное приложение -->
+  <div id="app-container" style="display: none;">
+    <nav class="navbar">
+      <div class="nav-content">
+        <div class="nav-brand">
+          <span class="brand-icon">✓</span>
+          <span class="brand-name">TaskFlow</span>
+        </div>
+        <div class="nav-user">
+          <span class="user-greeting">Привет, <strong id="current-user">Гость</strong>!</span>
+          <button id="logout-btn" class="btn btn-ghost">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            Выйти
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+        <div class="task-header">
+          <div>
+            <h1>Мои задачи</h1>
+            <p class="task-subtitle">Организуйте свои дела эффективно</p>
+          </div>
+          <div class="task-stats">
+            <div class="stat-item">
+              <span class="stat-value" id="completed-counter">0</span>
+              <span class="stat-label">Выполнено</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value" id="uncompleted-counter">0</span>
+              <span class="stat-label">Осталось</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="add-task-section">
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="input-box"
+              class="task-input"
+              placeholder="Добавьте новую задачу..."
+              autocomplete="off"
+            >
+            <button id="input-button" class="btn btn-add">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="10" y1="3" x2="10" y2="17"></line>
+                <line x1="3" y1="10" x2="17" y2="10"></line>
+              </svg>
+              Добавить
+            </button>
+          </div>
+        </div>
+
+        <div class="tasks-container">
+          <div id="list-container" class="task-list">
+            <!-- Задачи будут здесь -->
+          </div>
+
+          <div id="empty-state" class="empty-state">
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M40 30h40v80H40z"></path>
+              <path d="M50 45h20"></path>
+              <path d="M50 60h20"></path>
+              <path d="M50 75h10"></path>
+            </svg>
+            <h3>Пока нет задач</h3>
+            <p>Добавьте первую задачу, чтобы начать!</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Модальное окно редактирования -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <h3>Редактировать задачу</h3>
+      <input type="text" id="edit-input" class="form-input" placeholder="Название задачи">
+      <div class="modal-actions">
+        <button id="edit-cancel" class="btn btn-ghost">Отмена</button>
+        <button id="edit-save" class="btn btn-primary">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="client.js"></script>
+</body>
 </html>

@@ -19,29 +19,33 @@ const inputBox = document.getElementById("input-box");
 const listContainer = document.getElementById("list-container");
 const completedCounter = document.getElementById("completed-counter");
 const uncompletedCounter = document.getElementById("uncompleted-counter");
+const emptyState = document.getElementById("empty-state");
+
+// Модальное окно редактирования
+const editModal = document.getElementById("edit-modal");
+const editInput = document.getElementById("edit-input");
+const editSave = document.getElementById("edit-save");
+const editCancel = document.getElementById("edit-cancel");
 
 // ==================== ПЕРЕМЕННЫЕ ====================
 let currentUser = null;
 let authToken = null;
 let isGuest = false;
+let currentEditTaskId = null;
 
 // ==================== API ФУНКЦИИ ====================
 
-/**
- * Универсальная функция для API запросов
- */
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const defaultOptions = {
-    credentials: 'include', // Отправляем cookies
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers
     }
   };
 
-  // Добавляем токен в заголовок, если он есть
   if (authToken) {
     defaultOptions.headers.Authorization = `Bearer ${authToken}`;
   }
@@ -49,7 +53,6 @@ async function apiRequest(endpoint, options = {}) {
   try {
     const response = await fetch(url, { ...defaultOptions, ...options });
 
-    // Проверяем, является ли ответ JSON
     const contentType = response.headers.get('content-type');
     let data;
     if (contentType && contentType.includes('application/json')) {
@@ -89,8 +92,7 @@ async function login(username, password) {
     await loadTasks();
     return true;
   } catch (error) {
-    console.error('Login failed:', error);
-    alert(error.message || 'Login failed');
+    showNotification(error.message || 'Ошибка входа', 'error');
     return false;
   }
 }
@@ -113,8 +115,7 @@ async function signup(username, password) {
     await loadTasks();
     return true;
   } catch (error) {
-    console.error('Signup failed:', error);
-    alert(error.message || 'Signup failed');
+    showNotification(error.message || 'Ошибка регистрации', 'error');
     return false;
   }
 }
@@ -140,11 +141,11 @@ async function logout() {
 }
 
 function loginAsGuest() {
-  currentUser = { username: "Guest" };
+  currentUser = { username: "Гость" };
   isGuest = true;
   authToken = null;
 
-  localStorage.setItem('current-user', JSON.stringify({ username: "Guest" }));
+  localStorage.setItem('current-user', JSON.stringify({ username: "Гость" }));
 
   showApp();
   listContainer.innerHTML = "";
@@ -184,6 +185,17 @@ function showAuth() {
   appContainer.style.display = "none";
 }
 
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
 // ==================== TASK FUNCTIONS ====================
 
 async function loadTasks() {
@@ -195,7 +207,6 @@ async function loadTasks() {
   } catch (error) {
     console.error('Failed to load tasks:', error);
     if (error.message.includes('token')) {
-      // Токен недействителен, разлогиниваем
       logout();
     }
   }
@@ -203,55 +214,70 @@ async function loadTasks() {
 
 function displayTasks(tasks) {
   listContainer.innerHTML = "";
-  tasks.forEach(taskData => {
-    const li = document.createElement("li");
-    li.dataset.taskId = taskData.id;
-    li.innerHTML = `
-      <label>
-        <input type="checkbox" ${taskData.completed ? 'checked' : ''}>
-        <span>${escapeHtml(taskData.text)}</span>
-      </label>
-      <span class="edit-btn">Edit</span>
-      <span class="delete-btn">Delete</span>
-    `;
 
-    if (taskData.completed) {
-      li.classList.add("completed");
-    }
+  if (tasks.length === 0) {
+    emptyState.classList.add('visible');
+  } else {
+    emptyState.classList.remove('visible');
 
-    listContainer.appendChild(li);
-    attachTaskListeners(li);
-  });
+    tasks.forEach(taskData => {
+      const li = document.createElement("div");
+      li.className = "task-item" + (taskData.completed ? " completed" : "");
+      li.dataset.taskId = taskData.id;
+      li.innerHTML = `
+        <label class="task-checkbox">
+          <input type="checkbox" ${taskData.completed ? 'checked' : ''}>
+          <span class="checkmark"></span>
+        </label>
+        <span class="task-content">${escapeHtml(taskData.text)}</span>
+        <div class="task-actions">
+          <button class="action-btn edit">Изменить</button>
+          <button class="action-btn delete">Удалить</button>
+        </div>
+      `;
+
+      listContainer.appendChild(li);
+      attachTaskListeners(li);
+    });
+  }
   updateCounters();
 }
 
 async function saveTask(text) {
-  if (isGuest) return;
-
-  try {
-    const data = await apiRequest('/tasks', {
-      method: 'POST',
-      body: JSON.stringify({ text })
-    });
-
-    // Добавляем новую задачу в UI
-    const li = document.createElement("li");
-    li.dataset.taskId = data.task.id;
-    li.innerHTML = `
-      <label>
-        <input type="checkbox">
-        <span>${escapeHtml(data.task.text)}</span>
-      </label>
-      <span class="edit-btn">Edit</span>
-      <span class="delete-btn">Delete</span>
-    `;
-    listContainer.appendChild(li);
-    attachTaskListeners(li);
-    updateCounters();
-  } catch (error) {
-    console.error('Failed to save task:', error);
-    alert('Failed to create task');
+  if (isGuest) {
+    // Гости - только локально
+    addLocalTask(text);
+  } else {
+    try {
+      await apiRequest('/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ text })
+      });
+      await loadTasks();
+    } catch (error) {
+      showNotification('Не удалось создать задачу', 'error');
+    }
   }
+}
+
+function addLocalTask(text) {
+  const li = document.createElement("div");
+  li.className = "task-item";
+  li.innerHTML = `
+    <label class="task-checkbox">
+      <input type="checkbox">
+      <span class="checkmark"></span>
+    </label>
+    <span class="task-content">${escapeHtml(text)}</span>
+    <div class="task-actions">
+      <button class="action-btn edit">Изменить</button>
+      <button class="action-btn delete">Удалить</button>
+    </div>
+  `;
+  listContainer.appendChild(li);
+  attachTaskListeners(li);
+  updateCounters();
+  checkEmptyState();
 }
 
 async function updateTaskOnServer(taskId, updates) {
@@ -263,8 +289,7 @@ async function updateTaskOnServer(taskId, updates) {
       body: JSON.stringify(updates)
     });
   } catch (error) {
-    console.error('Failed to update task:', error);
-    alert('Failed to update task');
+    showNotification('Не удалось обновить задачу', 'error');
   }
 }
 
@@ -276,8 +301,7 @@ async function deleteTaskFromServer(taskId) {
       method: 'DELETE'
     });
   } catch (error) {
-    console.error('Failed to delete task:', error);
-    alert('Failed to delete task');
+    showNotification('Не удалось удалить задачу', 'error');
   }
 }
 
@@ -288,51 +312,48 @@ function escapeHtml(text) {
 }
 
 function updateCounters() {
-  const completedTasks = document.querySelectorAll("#list-container li.completed").length;
-  const uncompletedTasks = document.querySelectorAll("#list-container li:not(.completed)").length;
+  const completedTasks = document.querySelectorAll(".task-item.completed").length;
+  const uncompletedTasks = document.querySelectorAll(".task-item:not(.completed)").length;
 
   completedCounter.textContent = completedTasks;
   uncompletedCounter.textContent = uncompletedTasks;
+
+  checkEmptyState();
 }
 
-function attachTaskListeners(li) {
-  const checkbox = li.querySelector("input[type='checkbox']");
-  const editBtn = li.querySelector(".edit-btn");
-  const taskSpan = li.querySelector("span");
-  const deleteBtn = li.querySelector(".delete-btn");
+function checkEmptyState() {
+  const hasTasks = listContainer.children.length > 0;
+  emptyState.classList.toggle('visible', !hasTasks);
+}
+
+function attachTaskListeners(taskElement) {
+  const checkbox = taskElement.querySelector("input[type='checkbox']");
+  const editBtn = taskElement.querySelector(".edit");
+  const deleteBtn = taskElement.querySelector(".delete");
 
   checkbox.addEventListener("click", async function() {
-    li.classList.toggle("completed", checkbox.checked);
+    taskElement.classList.toggle("completed", checkbox.checked);
     updateCounters();
 
-    const taskId = parseInt(li.dataset.taskId);
+    const taskId = parseInt(taskElement.dataset.taskId);
     if (taskId && !isGuest) {
-      await updateTaskOnServer(taskId, { text: taskSpan.textContent, completed: checkbox.checked });
+      const taskContent = taskElement.querySelector('.task-content').textContent;
+      await updateTaskOnServer(taskId, { text: taskContent, completed: checkbox.checked });
     }
   });
 
-  editBtn.addEventListener("click", async function() {
-    const update = prompt("Edit task:", taskSpan.textContent);
-    if (update !== null && update.trim() !== "") {
-      taskSpan.textContent = update.trim();
-      li.classList.remove("completed");
-      checkbox.checked = false;
-      updateCounters();
-
-      const taskId = parseInt(li.dataset.taskId);
-      if (taskId && !isGuest) {
-        await updateTaskOnServer(taskId, { text: update.trim(), completed: false });
-      }
-    }
+  editBtn.addEventListener("click", function() {
+    const taskContent = taskElement.querySelector('.task-content').textContent;
+    openEditModal(parseInt(taskElement.dataset.taskId), taskContent);
   });
 
   deleteBtn.addEventListener("click", async function() {
-    if (confirm("Are you sure you want to delete this task?")) {
-      const taskId = parseInt(li.dataset.taskId);
+    if (confirm("Удалить эту задачу?")) {
+      const taskId = parseInt(taskElement.dataset.taskId);
       if (taskId && !isGuest) {
         await deleteTaskFromServer(taskId);
       }
-      li.remove();
+      taskElement.remove();
       updateCounters();
     }
   });
@@ -341,31 +362,50 @@ function attachTaskListeners(li) {
 async function addTask() {
   const task = inputBox.value.trim();
   if (!task) {
-    alert("Please write down a task");
+    showNotification('Введите текст задачи', 'error');
     return;
   }
 
-  if (isGuest) {
-    // Гости - только локально
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <label>
-        <input type="checkbox">
-        <span>${escapeHtml(task)}</span>
-      </label>
-      <span class="edit-btn">Edit</span>
-      <span class="delete-btn">Delete</span>
-    `;
-    listContainer.appendChild(li);
-    inputBox.value = "";
-    inputBox.focus();
-    attachTaskListeners(li);
-    updateCounters();
-  } else {
-    // Авторизованные пользователи - на сервер
-    inputBox.value = "";
-    await saveTask(task);
+  inputBox.value = "";
+  await saveTask(task);
+}
+
+// ==================== МОДАЛЬНОЕ ОКНО ====================
+
+function openEditModal(taskId, currentText) {
+  currentEditTaskId = taskId;
+  editInput.value = currentText;
+  editModal.classList.add('active');
+  editInput.focus();
+}
+
+function closeEditModal() {
+  editModal.classList.remove('active');
+  currentEditTaskId = null;
+  editInput.value = "";
+}
+
+async function saveEdit() {
+  const newText = editInput.value.trim();
+
+  if (!newText) {
+    showNotification('Введите текст задачи', 'error');
+    return;
   }
+
+  const taskElement = document.querySelector(`[data-task-id="${currentEditTaskId}"]`);
+
+  if (currentEditTaskId && !isGuest) {
+    const checkbox = taskElement.querySelector('input[type="checkbox"]').checked;
+    await updateTaskOnServer(currentEditTaskId, { text: newText, completed: checkbox });
+  }
+
+  if (taskElement) {
+    const taskContent = taskElement.querySelector('.task-content');
+    taskContent.textContent = newText;
+  }
+
+  closeEditModal();
 }
 
 // ==================== EVENT LISTENERS ====================
@@ -390,11 +430,13 @@ loginBtn.addEventListener("click", async function() {
   const password = document.getElementById("login-password").value.trim();
 
   if (!username || !password) {
-    alert("Please enter both username and password");
+    showNotification('Заполните все поля', 'error');
     return;
   }
 
+  loginBtn.classList.add('loading');
   await login(username, password);
+  loginBtn.classList.remove('loading');
 });
 
 signupBtn.addEventListener("click", async function() {
@@ -403,26 +445,27 @@ signupBtn.addEventListener("click", async function() {
   const confirmPass = document.getElementById("signup-confirm").value.trim();
 
   if (!username || !password || !confirmPass) {
-    alert("Please fill all fields");
+    showNotification('Заполните все поля', 'error');
     return;
   }
 
   if (password !== confirmPass) {
-    alert("Passwords do not match!");
+    showNotification('Пароли не совпадают', 'error');
     return;
   }
 
   if (password.length < 6) {
-    alert("Password must be at least 6 characters");
+    showNotification('Минимум 6 символов', 'error');
     return;
   }
 
+  signupBtn.classList.add('loading');
   await signup(username, password);
+  signupBtn.classList.remove('loading');
 });
 
 logoutBtn.addEventListener("click", logout);
 
-// Add task button listener
 const inputButton = document.getElementById("input-button");
 if (inputButton) {
   inputButton.addEventListener("click", addTask);
@@ -431,6 +474,22 @@ if (inputButton) {
 inputBox.addEventListener("keyup", function(event) {
   if (event.key === "Enter") {
     addTask();
+  }
+});
+
+// Модальное окно
+editCancel.addEventListener("click", closeEditModal);
+editSave.addEventListener("click", saveEdit);
+editInput.addEventListener("keyup", function(event) {
+  if (event.key === "Enter") {
+    saveEdit();
+  }
+});
+
+// Закрытие по клику на оверлей
+editModal.addEventListener('click', function(e) {
+  if (e.target === editModal || e.target.classList.contains('modal-overlay')) {
+    closeEditModal();
   }
 });
 
@@ -444,13 +503,14 @@ document.addEventListener("DOMContentLoaded", async function() {
     try {
       authToken = savedToken;
       currentUser = JSON.parse(savedUser);
-      isGuest = currentUser.username === "Guest";
+      isGuest = currentUser.username === "Guest" || currentUser.username === "Гость";
 
-      if (isGuest) {
-        showApp();
-      } else {
-        showApp();
+      showApp();
+
+      if (!isGuest) {
         await loadTasks();
+      } else {
+        checkEmptyState();
       }
     } catch (error) {
       console.error('Session restore failed:', error);
