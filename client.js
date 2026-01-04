@@ -639,8 +639,9 @@ function escapeHtml(text) {
 }
 
 function updateCounters() {
-  const completedTasks = document.querySelectorAll(".task-item.completed").length;
-  const uncompletedTasks = document.querySelectorAll(".task-item:not(.completed)").length;
+  // Считаем из allTasks, чтобы показывать общее количество, а не только отфильтрованные
+  const completedTasks = allTasks.filter(task => task.completed).length;
+  const uncompletedTasks = allTasks.filter(task => !task.completed).length;
 
   completedCounter.textContent = completedTasks;
   uncompletedCounter.textContent = uncompletedTasks;
