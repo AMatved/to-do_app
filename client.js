@@ -21,6 +21,12 @@ const translations = {
     editPlaceholder: 'Название задачи',
     cancel: 'Отмена',
     save: 'Сохранить',
+    // Date/Time
+    justNow: 'только что',
+    minutesAgo: 'минут назад',
+    hoursAgo: 'часов назад',
+    daysAgo: 'дней назад',
+    at: 'в',
     // Auth
     username: 'Имя пользователя',
     password: 'Пароль',
@@ -72,6 +78,12 @@ const translations = {
     editPlaceholder: 'Task name',
     cancel: 'Cancel',
     save: 'Save',
+    // Date/Time
+    justNow: 'just now',
+    minutesAgo: 'minutes ago',
+    hoursAgo: 'hours ago',
+    daysAgo: 'days ago',
+    at: 'at',
     // Auth
     username: 'Username',
     password: 'Password',
@@ -169,11 +181,55 @@ function updateUILanguage() {
   document.getElementById('signup-password').placeholder = t('signupPasswordPlaceholder');
   document.getElementById('signup-confirm').placeholder = t('confirmPlaceholder');
 
+  // Update task timestamps
+  document.querySelectorAll('.task-timestamp').forEach(el => {
+    const timestamp = el.dataset.timestamp;
+    if (timestamp) {
+      el.textContent = formatTimestamp(timestamp);
+    }
+  });
+
   // Update guest username if logged in as guest
   if (currentUser && (currentUser.username === 'Гость' || currentUser.username === 'Guest')) {
     currentUser.username = t('guestName');
     document.getElementById('current-user').textContent = currentUser.username;
   }
+}
+
+// Функция для форматирования времени
+function formatTimestamp(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  let timeStr;
+  if (diffMins < 1) {
+    timeStr = t('justNow');
+  } else if (diffMins < 60) {
+    timeStr = `${diffMins} ${t('minutesAgo')}`;
+  } else if (diffHours < 24) {
+    timeStr = `${diffHours} ${t('hoursAgo')}`;
+  } else if (diffDays < 7) {
+    timeStr = `${diffDays} ${t('daysAgo')}`;
+  } else {
+    // Show full date for older tasks
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    if (currentLang === 'ru') {
+      timeStr = `${day}.${month}.${year} ${t('at')} ${hours}:${minutes}`;
+    } else {
+      timeStr = `${month}/${day}/${year} ${t('at')} ${hours}:${minutes}`;
+    }
+  }
+
+  return timeStr;
 }
 
 // ==================== DOM ELEMENTS ====================
@@ -402,12 +458,18 @@ function displayTasks(tasks) {
       const li = document.createElement("div");
       li.className = "task-item" + (taskData.completed ? " completed" : "");
       li.dataset.taskId = taskData.id;
+
+      const timestamp = taskData.created_at ? formatTimestamp(taskData.created_at) : '';
+
       li.innerHTML = `
         <label class="task-checkbox">
           <input type="checkbox" ${taskData.completed ? 'checked' : ''}>
           <span class="checkmark"></span>
         </label>
-        <span class="task-content">${escapeHtml(taskData.text)}</span>
+        <div class="task-wrapper">
+          <span class="task-content">${escapeHtml(taskData.text)}</span>
+          ${timestamp ? `<span class="task-timestamp" data-timestamp="${taskData.created_at}">${timestamp}</span>` : ''}
+        </div>
         <div class="task-actions">
           <button class="action-btn edit">${t('edit')}</button>
           <button class="action-btn delete">${t('delete')}</button>
@@ -435,6 +497,8 @@ async function saveTask(text) {
       // Добавляем новую задачу в UI напрямую (быстрее)
       if (data && data.task) {
         const taskData = data.task;
+        const timestamp = taskData.created_at ? formatTimestamp(taskData.created_at) : '';
+
         const li = document.createElement("div");
         li.className = "task-item";
         li.dataset.taskId = taskData.id;
@@ -443,7 +507,10 @@ async function saveTask(text) {
             <input type="checkbox">
             <span class="checkmark"></span>
           </label>
-          <span class="task-content">${escapeHtml(taskData.text)}</span>
+          <div class="task-wrapper">
+            <span class="task-content">${escapeHtml(taskData.text)}</span>
+            ${timestamp ? `<span class="task-timestamp" data-timestamp="${taskData.created_at}">${timestamp}</span>` : ''}
+          </div>
           <div class="task-actions">
             <button class="action-btn edit">${t('edit')}</button>
             <button class="action-btn delete">${t('delete')}</button>
