@@ -1,7 +1,6 @@
 // ==================== КОНФИГУРАЦИЯ ====================
-const API_BASE_URL = window.location.protocol === 'https:'
-  ? 'https://localhost:3443/api'
-  : 'http://localhost:3000/api';
+// Используем относительный путь - работает и локально, и на Railway
+const API_BASE_URL = '/api';
 
 // ==================== DOM ELEMENTS ====================
 const authContainer = document.getElementById("auth-container");
@@ -422,6 +421,12 @@ signupBtn.addEventListener("click", async function() {
 });
 
 logoutBtn.addEventListener("click", logout);
+
+// Add task button listener
+const inputButton = document.getElementById("input-button");
+if (inputButton) {
+  inputButton.addEventListener("click", addTask);
+}
 
 inputBox.addEventListener("keyup", function(event) {
   if (event.key === "Enter") {
