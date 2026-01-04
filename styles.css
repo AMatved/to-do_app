@@ -570,6 +570,90 @@ body {
   color: var(--text-primary);
 }
 
+/* ==================== CATEGORY SELECTOR (IN TASK INPUT) ==================== */
+
+.category-selector {
+  position: relative;
+}
+
+.category-selector-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.category-selector-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--primary);
+  transform: scale(1.02);
+}
+
+.category-selector-btn.has-category {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.category-selector-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.category-selector-label {
+  font-size: 13px;
+}
+
+.category-selector-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow-lg);
+  min-width: 200px;
+  z-index: 100;
+  display: none;
+  animation: fadeIn 0.2s ease;
+}
+
+.category-selector-menu.active {
+  display: block;
+}
+
+.category-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 1px solid var(--border);
+}
+
+.category-selector-item:last-child {
+  border-bottom: none;
+}
+
+.category-selector-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.category-selector-item.selected {
+  background: var(--primary-light);
+}
+
 .input-wrapper {
   display: flex;
   gap: 12px;

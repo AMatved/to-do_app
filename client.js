@@ -89,6 +89,7 @@ const translations = {
     categoryHome: 'Дом',
     categoryDevelopment: 'Личное развитие',
     categoryFinance: 'Финансы',
+    categoryLabel: 'Категория',
     // Placeholders
     loginPlaceholder: 'Введите имя пользователя',
     passwordPlaceholder: 'Введите пароль',
@@ -181,6 +182,7 @@ const translations = {
     categoryHome: 'Home',
     categoryDevelopment: 'Personal Development',
     categoryFinance: 'Finance',
+    categoryLabel: 'Category',
     // Placeholders
     loginPlaceholder: 'Enter username',
     passwordPlaceholder: 'Enter password',
@@ -308,6 +310,12 @@ function updateUILanguage() {
   document.querySelector('.category-development').textContent = t('categoryDevelopment');
   document.querySelector('.category-finance').textContent = t('categoryFinance');
 
+  // Update category selector label if no category is selected
+  const categorySelectorLabel = document.querySelector('.category-label-text');
+  if (categorySelectorLabel && !selectedTaskCategory) {
+    categorySelectorLabel.textContent = t('categoryLabel');
+  }
+
   // Update trash button title
   const trashBtn = document.getElementById('trash-btn');
   if (trashBtn) {
@@ -398,6 +406,7 @@ let currentEditTaskId = null;
 let currentFilter = localStorage.getItem('task-filter') || 'all'; // all, active, completed
 let sortDirection = localStorage.getItem('sort-direction') || 'desc'; // asc, desc
 let currentCategory = localStorage.getItem('task-category') || null; // work, study, health, home, development, finance, null (all)
+let selectedTaskCategory = null; // Category selected for new task creation
 let allTasks = []; // Храним все задачи для фильтрации
 
 // ==================== API ФУНКЦИИ ====================
@@ -678,6 +687,69 @@ function selectCategory(category) {
   applyFiltersAndSort();
 }
 
+// ==================== CATEGORY SELECTOR (FOR TASK CREATION) ====================
+
+function toggleCategorySelector() {
+  const categorySelectorMenu = document.getElementById('category-selector-menu');
+  const categorySelectorBtn = document.getElementById('category-selector-btn');
+
+  if (categorySelectorMenu.classList.contains('active')) {
+    categorySelectorMenu.classList.remove('active');
+  } else {
+    categorySelectorMenu.classList.add('active');
+  }
+}
+
+function selectTaskCategory(category) {
+  const categorySelectorBtn = document.getElementById('category-selector-btn');
+  const categorySelectorIcon = categorySelectorBtn.querySelector('.category-selector-icon');
+  const categorySelectorLabel = categorySelectorBtn.querySelector('.category-selector-label');
+
+  const categoryIcons = {
+    work: '💼',
+    study: '📚',
+    health: '💪',
+    home: '🏠',
+    development: '🚀',
+    finance: '💰'
+  };
+
+  const categoryNames = {
+    work: t('categoryWork'),
+    study: t('categoryStudy'),
+    health: t('categoryHealth'),
+    home: t('categoryHome'),
+    development: t('categoryDevelopment'),
+    finance: t('categoryFinance')
+  };
+
+  if (selectedTaskCategory === category) {
+    // Deselect if clicking the same category
+    selectedTaskCategory = null;
+    categorySelectorBtn.classList.remove('has-category');
+    categorySelectorIcon.textContent = '📋';
+    categorySelectorLabel.textContent = t('categoryLabel');
+  } else {
+    // Select new category
+    selectedTaskCategory = category;
+    categorySelectorBtn.classList.add('has-category');
+    categorySelectorIcon.textContent = categoryIcons[category];
+    categorySelectorLabel.textContent = categoryNames[category];
+  }
+
+  // Update menu items
+  document.querySelectorAll('.category-selector-item').forEach(item => {
+    item.classList.remove('selected');
+    if (item.dataset.category === selectedTaskCategory) {
+      item.classList.add('selected');
+    }
+  });
+
+  // Close dropdown
+  const categorySelectorMenu = document.getElementById('category-selector-menu');
+  categorySelectorMenu.classList.remove('active');
+}
+
 // ==================== COLLAPSE/EXPAND FUNCTIONS ====================
 
 let tasksCollapsed = false;
@@ -764,9 +836,14 @@ async function saveTask(text) {
     addLocalTask(text);
   } else {
     try {
+      const requestBody = { text };
+      if (selectedTaskCategory) {
+        requestBody.category = selectedTaskCategory;
+      }
+
       const data = await apiRequest('/tasks', {
         method: 'POST',
-        body: JSON.stringify({ text })
+        body: JSON.stringify(requestBody)
       });
 
       // Добавляем новую задачу в allTasks и применяем фильтры
@@ -1343,6 +1420,27 @@ document.addEventListener("DOMContentLoaded", async function() {
       const categoryBtn = document.getElementById('category-btn');
       categoryMenu.classList.remove('active');
       categoryBtn.classList.remove('active');
+    }
+  });
+
+  // Добавляем listeners для селектора категорий при создании задач
+  const categorySelectorBtn = document.getElementById('category-selector-btn');
+  if (categorySelectorBtn) {
+    categorySelectorBtn.addEventListener('click', toggleCategorySelector);
+  }
+
+  document.querySelectorAll('.category-selector-item').forEach(item => {
+    item.addEventListener('click', function() {
+      selectTaskCategory(this.dataset.category);
+    });
+  });
+
+  // Закрытие селектора по клику вне его
+  document.addEventListener('click', function(e) {
+    const categorySelector = document.querySelector('.category-selector');
+    if (categorySelector && !categorySelector.contains(e.target)) {
+      const categorySelectorMenu = document.getElementById('category-selector-menu');
+      categorySelectorMenu.classList.remove('active');
     }
   });
 

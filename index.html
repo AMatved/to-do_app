@@ -199,6 +199,38 @@
               placeholder="Добавьте новую задачу..."
               autocomplete="off"
             >
+            <div class="category-selector">
+              <button id="category-selector-btn" class="category-selector-btn" title="Выбрать категорию">
+                <span class="category-selector-icon">📋</span>
+                <span class="category-selector-label category-label-text">Категория</span>
+              </button>
+              <div id="category-selector-menu" class="category-selector-menu">
+                <div class="category-selector-item" data-category="work">
+                  <span class="category-icon">💼</span>
+                  <span class="category-text category-work">Работа</span>
+                </div>
+                <div class="category-selector-item" data-category="study">
+                  <span class="category-icon">📚</span>
+                  <span class="category-text category-study">Учеба</span>
+                </div>
+                <div class="category-selector-item" data-category="health">
+                  <span class="category-icon">💪</span>
+                  <span class="category-text category-health">Здоровье</span>
+                </div>
+                <div class="category-selector-item" data-category="home">
+                  <span class="category-icon">🏠</span>
+                  <span class="category-text category-home">Дом</span>
+                </div>
+                <div class="category-selector-item" data-category="development">
+                  <span class="category-icon">🚀</span>
+                  <span class="category-text category-development">Личное развитие</span>
+                </div>
+                <div class="category-selector-item" data-category="finance">
+                  <span class="category-icon">💰</span>
+                  <span class="category-text category-finance">Финансы</span>
+                </div>
+              </div>
+            </div>
             <button id="input-button" class="btn btn-add">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="10" y1="3" x2="10" y2="17"></line>
