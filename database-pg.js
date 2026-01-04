@@ -109,12 +109,18 @@ const createTask = async (userId, text) => {
 
 const updateTask = async (taskId, userId, updates) => {
   const { text, completed } = updates;
+
+  console.log('database-pg.js updateTask called with:', { taskId, userId, text, completed });
+
   const result = await pool.query(
     `UPDATE tasks
      SET text = $1, completed = $2, updated_at = CURRENT_TIMESTAMP
      WHERE id = $3 AND user_id = $4`,
-    [text, completed ? 1 : 0, taskId, userId]
+    [text, completed, taskId, userId]
   );
+
+  console.log('database-pg.js updateTask result rowCount:', result.rowCount);
+
   return result.rowCount > 0;
 };
 

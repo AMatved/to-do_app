@@ -595,6 +595,8 @@ function addLocalTask(text) {
 async function updateTaskOnServer(taskId, updates) {
   if (isGuest) return;
 
+  console.log('Client: Updating task', taskId, 'with updates:', updates);
+
   try {
     await apiRequest(`/tasks/${taskId}`, {
       method: 'PUT',
@@ -604,7 +606,9 @@ async function updateTaskOnServer(taskId, updates) {
     // Обновляем задачу в allTasks
     const taskIndex = allTasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
+      console.log('Client: Task before update in allTasks:', allTasks[taskIndex]);
       allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates };
+      console.log('Client: Task after update in allTasks:', allTasks[taskIndex]);
       applyFiltersAndSort();
     }
   } catch (error) {
