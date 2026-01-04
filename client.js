@@ -457,6 +457,7 @@ async function loadTasks() {
   try {
     const data = await apiRequest('/tasks');
     allTasks = data.tasks || [];
+    console.log('Loaded tasks from server:', allTasks);
     applyFiltersAndSort();
   } catch (error) {
     console.error('Failed to load tasks:', error);
@@ -600,6 +601,8 @@ async function updateTaskOnServer(taskId, updates) {
   if (isGuest) return;
 
   try {
+    console.log('Updating task on server:', taskId, updates);
+
     await apiRequest(`/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(updates)
@@ -608,10 +611,13 @@ async function updateTaskOnServer(taskId, updates) {
     // Обновляем задачу в allTasks
     const taskIndex = allTasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
+      console.log('Task before update:', allTasks[taskIndex]);
       allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates };
+      console.log('Task after update:', allTasks[taskIndex]);
       applyFiltersAndSort();
     }
   } catch (error) {
+    console.error('Failed to update task:', error);
     showNotification(t('errorTaskUpdate'), 'error');
   }
 }
@@ -659,14 +665,15 @@ function attachTaskListeners(taskElement) {
   const editBtn = taskElement.querySelector(".edit");
   const deleteBtn = taskElement.querySelector(".delete");
 
-  checkbox.addEventListener("click", async function() {
-    taskElement.classList.toggle("completed", checkbox.checked);
-    updateCounters();
-
+  checkbox.addEventListener("change", async function() {
     const taskId = parseInt(taskElement.dataset.taskId);
     if (taskId && !isGuest) {
       const taskContent = taskElement.querySelector('.task-content').textContent;
       await updateTaskOnServer(taskId, { text: taskContent, completed: checkbox.checked });
+    } else {
+      // Для гостей обновляем напрямую
+      taskElement.classList.toggle("completed", checkbox.checked);
+      updateCounters();
     }
   });
 
@@ -680,9 +687,11 @@ function attachTaskListeners(taskElement) {
       const taskId = parseInt(taskElement.dataset.taskId);
       if (taskId && !isGuest) {
         await deleteTaskFromServer(taskId);
+      } else {
+        // Для гостей удаляем напрямую
+        taskElement.remove();
+        updateCounters();
       }
-      taskElement.remove();
-      updateCounters();
     }
   });
 }
