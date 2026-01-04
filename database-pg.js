@@ -113,7 +113,7 @@ const updateTask = async (taskId, userId, updates) => {
     `UPDATE tasks
      SET text = $1, completed = $2, updated_at = CURRENT_TIMESTAMP
      WHERE id = $3 AND user_id = $4`,
-    [text, completed, taskId, userId]
+    [text, completed ? 1 : 0, taskId, userId]
   );
   return result.rowCount > 0;
 };

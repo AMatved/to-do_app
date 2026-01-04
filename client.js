@@ -299,8 +299,6 @@ async function apiRequest(endpoint, options = {}) {
     defaultOptions.headers.Authorization = `Bearer ${authToken}`;
   }
 
-  console.log('API Request:', url, options.method || 'GET');
-
   try {
     const response = await fetch(url, { ...defaultOptions, ...options });
 
@@ -311,8 +309,6 @@ async function apiRequest(endpoint, options = {}) {
     } else {
       data = await response.text();
     }
-
-    console.log('API Response:', response.status, data);
 
     if (!response.ok) {
       throw new Error(data.error || `HTTP error! status: ${response.status}`);
@@ -457,7 +453,6 @@ async function loadTasks() {
   try {
     const data = await apiRequest('/tasks');
     allTasks = data.tasks || [];
-    console.log('Loaded tasks from server:', allTasks);
     applyFiltersAndSort();
   } catch (error) {
     console.error('Failed to load tasks:', error);
@@ -601,8 +596,6 @@ async function updateTaskOnServer(taskId, updates) {
   if (isGuest) return;
 
   try {
-    console.log('Updating task on server:', taskId, updates);
-
     await apiRequest(`/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(updates)
@@ -611,13 +604,10 @@ async function updateTaskOnServer(taskId, updates) {
     // Обновляем задачу в allTasks
     const taskIndex = allTasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
-      console.log('Task before update:', allTasks[taskIndex]);
       allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates };
-      console.log('Task after update:', allTasks[taskIndex]);
       applyFiltersAndSort();
     }
   } catch (error) {
-    console.error('Failed to update task:', error);
     showNotification(t('errorTaskUpdate'), 'error');
   }
 }
@@ -703,15 +693,10 @@ async function addTask() {
     return;
   }
 
-  console.log('Adding task:', task);
-  console.log('Is guest:', isGuest);
-  console.log('Has auth token:', !!authToken);
-
   inputBox.value = "";
 
   try {
     await saveTask(task);
-    console.log('Task saved successfully');
   } catch (error) {
     console.error('Failed to save task:', error);
     showNotification(t('errorTaskCreate'), 'error');
