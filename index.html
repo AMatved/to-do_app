@@ -166,17 +166,18 @@
         </div>
 
         <div class="tasks-container">
+          <!-- Collapse/Expand Toggle (Top Right) -->
+          <button id="toggle-tasks-btn" class="toggle-tasks-btn-inline" title="Toggle tasks">
+            <svg id="collapse-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <svg id="expand-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+              <polyline points="6 9 12 3 18 9"></polyline>
+            </svg>
+            <span class="toggle-tasks-text">Hide Tasks</span>
+          </button>
+
           <div id="list-container" class="task-list">
-            <!-- Collapse/Expand Toggle (Top Right) -->
-            <button id="toggle-tasks-btn" class="toggle-tasks-btn-inline" title="Toggle tasks">
-              <svg id="collapse-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-              <svg id="expand-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                <polyline points="6 9 12 3 18 9"></polyline>
-              </svg>
-              <span class="toggle-tasks-text">Hide Tasks</span>
-            </button>
             <!-- Задачи будут здесь -->
           </div>
 
