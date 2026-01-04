@@ -35,6 +35,9 @@ const translations = {
     sortAsc: 'По возрастанию',
     sortDesc: 'По убыванию',
     deleteCompleted: 'Очистить выполненные',
+    // Collapse
+    hideTasks: 'Скрыть задачи',
+    showTasks: 'Показать задачи',
     // Auth
     username: 'Имя пользователя',
     password: 'Пароль',
@@ -117,6 +120,9 @@ const translations = {
     sortAsc: 'Ascending',
     sortDesc: 'Descending',
     deleteCompleted: 'Clear completed',
+    // Collapse
+    hideTasks: 'Hide Tasks',
+    showTasks: 'Show Tasks',
     // Auth
     username: 'Username',
     password: 'Password',
@@ -284,6 +290,12 @@ function updateUILanguage() {
   const trashBtn = document.getElementById('trash-btn');
   if (trashBtn) {
     trashBtn.title = t('trash');
+  }
+
+  // Update toggle tasks button
+  const toggleText = document.querySelector('.toggle-tasks-text');
+  if (toggleText) {
+    toggleText.textContent = tasksCollapsed ? t('showTasks') : t('hideTasks');
   }
 
   // Update guest username if logged in as guest
@@ -591,6 +603,49 @@ function updateFilterButtons() {
   const sortIcon = document.getElementById('sort-icon');
   if (sortIcon) {
     sortIcon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+  }
+}
+
+// ==================== COLLAPSE/EXPAND FUNCTIONS ====================
+
+let tasksCollapsed = false;
+
+function toggleTasksVisibility() {
+  tasksCollapsed = !tasksCollapsed;
+  const taskList = document.getElementById('list-container');
+  const collapseIcon = document.getElementById('collapse-icon');
+  const expandIcon = document.getElementById('expand-icon');
+  const toggleText = document.querySelector('.toggle-tasks-text');
+
+  if (tasksCollapsed) {
+    taskList.classList.add('collapsed');
+    collapseIcon.style.display = 'none';
+    expandIcon.style.display = 'block';
+    toggleText.textContent = t('showTasks');
+  } else {
+    taskList.classList.remove('collapsed');
+    collapseIcon.style.display = 'block';
+    expandIcon.style.display = 'none';
+    toggleText.textContent = t('hideTasks');
+  }
+
+  // Сохраняем состояние
+  localStorage.setItem('tasks-collapsed', tasksCollapsed);
+}
+
+function restoreTasksCollapsedState() {
+  const savedState = localStorage.getItem('tasks-collapsed');
+  if (savedState === 'true') {
+    tasksCollapsed = true;
+    const taskList = document.getElementById('list-container');
+    const collapseIcon = document.getElementById('collapse-icon');
+    const expandIcon = document.getElementById('expand-icon');
+    const toggleText = document.querySelector('.toggle-tasks-text');
+
+    taskList.classList.add('collapsed');
+    collapseIcon.style.display = 'none';
+    expandIcon.style.display = 'block';
+    toggleText.textContent = t('showTasks');
   }
 }
 
@@ -1189,6 +1244,15 @@ document.addEventListener("DOMContentLoaded", async function() {
       closeTrash();
     }
   });
+
+  // Добавляем listener для переключения видимости задач
+  const toggleTasksBtn = document.getElementById('toggle-tasks-btn');
+  if (toggleTasksBtn) {
+    toggleTasksBtn.addEventListener('click', toggleTasksVisibility);
+  }
+
+  // Восстанавливаем состояние свернутых задач
+  restoreTasksCollapsedState();
 
   const savedToken = localStorage.getItem('auth-token');
   const savedUser = localStorage.getItem('current-user');

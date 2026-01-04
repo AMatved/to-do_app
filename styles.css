@@ -532,10 +532,53 @@ body {
   position: relative;
 }
 
+.tasks-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.toggle-tasks-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-tasks-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.toggle-tasks-btn svg {
+  transition: transform 0.3s;
+}
+
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+  max-height: 5000px;
+  opacity: 1;
+}
+
+.task-list.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
 }
 
 .task-item {
