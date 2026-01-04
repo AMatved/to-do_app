@@ -79,6 +79,26 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 /**
+ * DELETE /api/tasks/completed
+ * Удалить все выполненные задачи
+ */
+router.delete('/completed', authenticateToken, async (req, res) => {
+  try {
+    const deletedCount = await deleteAllCompletedTasks(req.user.id);
+
+    console.log(`DELETE /api/tasks/completed - Deleted ${deletedCount} completed tasks for user ${req.user.id}`);
+
+    res.json({
+      message: 'All completed tasks deleted successfully',
+      deletedCount
+    });
+  } catch (error) {
+    console.error('Delete all completed tasks error:', error);
+    res.status(500).json({ error: 'Failed to delete completed tasks' });
+  }
+});
+
+/**
  * PUT /api/tasks/:id
  * Обновить задачу
  */
@@ -145,26 +165,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete task error:', error);
     res.status(500).json({ error: 'Failed to delete task' });
-  }
-});
-
-/**
- * DELETE /api/tasks/completed
- * Удалить все выполненные задачи
- */
-router.delete('/completed', authenticateToken, async (req, res) => {
-  try {
-    const deletedCount = await deleteAllCompletedTasks(req.user.id);
-
-    console.log(`DELETE /api/tasks/completed - Deleted ${deletedCount} completed tasks for user ${req.user.id}`);
-
-    res.json({
-      message: 'All completed tasks deleted successfully',
-      deletedCount
-    });
-  } catch (error) {
-    console.error('Delete all completed tasks error:', error);
-    res.status(500).json({ error: 'Failed to delete completed tasks' });
   }
 });
 
