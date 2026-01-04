@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+data
+certs
+*.db
+*.sqlite
+.env
+.DS_Store
+Thumbs.db
+nul
+.git
+.gitignore
+README.md
+DEPLOYMENT*.md
+SECURITY.md
+QUICKSTART.md
+scripts/generate-cert.js
