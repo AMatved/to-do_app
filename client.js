@@ -27,6 +27,13 @@ const translations = {
     hoursAgo: 'часов назад',
     daysAgo: 'дней назад',
     at: 'в',
+    // Filters
+    filterAll: 'Все',
+    filterActive: 'Активные',
+    filterCompleted: 'Завершенные',
+    sortByDate: 'По дате',
+    sortAsc: 'По возрастанию',
+    sortDesc: 'По убыванию',
     // Auth
     username: 'Имя пользователя',
     password: 'Пароль',
@@ -84,6 +91,13 @@ const translations = {
     hoursAgo: 'hours ago',
     daysAgo: 'days ago',
     at: 'at',
+    // Filters
+    filterAll: 'All',
+    filterActive: 'Active',
+    filterCompleted: 'Completed',
+    sortByDate: 'By date',
+    sortAsc: 'Ascending',
+    sortDesc: 'Descending',
     // Auth
     username: 'Username',
     password: 'Password',
@@ -263,6 +277,11 @@ let authToken = null;
 let isGuest = false;
 let currentEditTaskId = null;
 
+// Фильтры и сортировка
+let currentFilter = localStorage.getItem('task-filter') || 'all'; // all, active, completed
+let sortDirection = localStorage.getItem('sort-direction') || 'desc'; // asc, desc
+let allTasks = []; // Храним все задачи для фильтрации
+
 // ==================== API ФУНКЦИИ ====================
 
 async function apiRequest(endpoint, options = {}) {
@@ -437,12 +456,62 @@ async function loadTasks() {
 
   try {
     const data = await apiRequest('/tasks');
-    displayTasks(data.tasks);
+    allTasks = data.tasks || [];
+    applyFiltersAndSort();
   } catch (error) {
     console.error('Failed to load tasks:', error);
     if (error.message.includes('token')) {
       logout();
     }
+  }
+}
+
+function applyFiltersAndSort() {
+  let filtered = [...allTasks];
+
+  // Применяем фильтр по статусу
+  if (currentFilter === 'active') {
+    filtered = filtered.filter(task => !task.completed);
+  } else if (currentFilter === 'completed') {
+    filtered = filtered.filter(task => task.completed);
+  }
+
+  // Сортируем по дате создания
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+
+  displayTasks(filtered);
+  updateFilterButtons();
+}
+
+function setFilter(filterType) {
+  currentFilter = filterType;
+  localStorage.setItem('task-filter', filterType);
+  applyFiltersAndSort();
+}
+
+function toggleSortDirection() {
+  sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+  localStorage.setItem('sort-direction', sortDirection);
+  applyFiltersAndSort();
+}
+
+function updateFilterButtons() {
+  // Обновляем активный фильтр
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.filter === currentFilter) {
+      btn.classList.add('active');
+    }
+  });
+
+  // Обновляем иконку сортировки
+  const sortIcon = document.getElementById('sort-icon');
+  if (sortIcon) {
+    sortIcon.textContent = sortDirection === 'asc' ? '↑' : '↓';
   }
 }
 
@@ -494,31 +563,10 @@ async function saveTask(text) {
         body: JSON.stringify({ text })
       });
 
-      // Добавляем новую задачу в UI напрямую (быстрее)
+      // Добавляем новую задачу в allTasks и применяем фильтры
       if (data && data.task) {
-        const taskData = data.task;
-        const timestamp = taskData.created_at ? formatTimestamp(taskData.created_at) : '';
-
-        const li = document.createElement("div");
-        li.className = "task-item";
-        li.dataset.taskId = taskData.id;
-        li.innerHTML = `
-          <label class="task-checkbox">
-            <input type="checkbox">
-            <span class="checkmark"></span>
-          </label>
-          <div class="task-wrapper">
-            <span class="task-content">${escapeHtml(taskData.text)}</span>
-            ${timestamp ? `<span class="task-timestamp" data-timestamp="${taskData.created_at}">${timestamp}</span>` : ''}
-          </div>
-          <div class="task-actions">
-            <button class="action-btn edit">${t('edit')}</button>
-            <button class="action-btn delete">${t('delete')}</button>
-          </div>
-        `;
-        listContainer.appendChild(li);
-        attachTaskListeners(li);
-        updateCounters();
+        allTasks.push(data.task);
+        applyFiltersAndSort();
         showNotification(t('successTaskCreated'));
       }
     } catch (error) {
@@ -556,6 +604,13 @@ async function updateTaskOnServer(taskId, updates) {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
+
+    // Обновляем задачу в allTasks
+    const taskIndex = allTasks.findIndex(t => t.id === taskId);
+    if (taskIndex !== -1) {
+      allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates };
+      applyFiltersAndSort();
+    }
   } catch (error) {
     showNotification(t('errorTaskUpdate'), 'error');
   }
@@ -568,6 +623,10 @@ async function deleteTaskFromServer(taskId) {
     await apiRequest(`/tasks/${taskId}`, {
       method: 'DELETE'
     });
+
+    // Удаляем задачу из allTasks
+    allTasks = allTasks.filter(t => t.id !== taskId);
+    applyFiltersAndSort();
   } catch (error) {
     showNotification(t('errorTaskDelete'), 'error');
   }
@@ -784,6 +843,19 @@ document.addEventListener("DOMContentLoaded", async function() {
     langToggle.addEventListener('click', function() {
       setLanguage(currentLang === 'ru' ? 'en' : 'ru');
     });
+  }
+
+  // Добавляем listeners для фильтров
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      setFilter(this.dataset.filter);
+    });
+  });
+
+  // Добавляем listener для сортировки
+  const sortBtn = document.getElementById('sort-btn');
+  if (sortBtn) {
+    sortBtn.addEventListener('click', toggleSortDirection);
   }
 
   const savedToken = localStorage.getItem('auth-token');
