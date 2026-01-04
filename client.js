@@ -405,7 +405,6 @@ let currentEditTaskId = null;
 // Фильтры и сортировка
 let currentFilter = localStorage.getItem('task-filter') || 'all'; // all, active, completed
 let sortDirection = localStorage.getItem('sort-direction') || 'desc'; // asc, desc
-let currentCategory = localStorage.getItem('task-category') || null; // work, study, health, home, development, finance, null (all)
 let selectedTaskCategory = null; // Category selected for new task creation
 let allTasks = []; // Храним все задачи для фильтрации
 
@@ -599,11 +598,6 @@ function applyFiltersAndSort() {
     filtered = filtered.filter(task => task.completed);
   }
 
-  // Применяем фильтр по категории
-  if (currentCategory) {
-    filtered = filtered.filter(task => task.category === currentCategory);
-  }
-
   // Сортируем по дате создания
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at);
@@ -641,50 +635,6 @@ function updateFilterButtons() {
   if (sortIcon) {
     sortIcon.textContent = sortDirection === 'asc' ? '↑' : '↓';
   }
-}
-
-// ==================== CATEGORY FILTER FUNCTIONS ====================
-
-function toggleCategoryDropdown() {
-  const categoryMenu = document.getElementById('category-menu');
-  const categoryBtn = document.getElementById('category-btn');
-
-  if (categoryMenu.classList.contains('active')) {
-    categoryMenu.classList.remove('active');
-    categoryBtn.classList.remove('active');
-  } else {
-    categoryMenu.classList.add('active');
-    categoryBtn.classList.add('active');
-  }
-}
-
-function selectCategory(category) {
-  currentCategory = category === currentCategory ? null : category;
-  localStorage.setItem('task-category', currentCategory || '');
-
-  // Update menu items
-  document.querySelectorAll('.category-menu-item').forEach(item => {
-    item.classList.remove('selected');
-    if (item.dataset.category === currentCategory) {
-      item.classList.add('selected');
-    }
-  });
-
-  // Update button state
-  const categoryBtn = document.getElementById('category-btn');
-  if (currentCategory) {
-    categoryBtn.classList.add('active');
-  } else {
-    categoryBtn.classList.remove('active');
-  }
-
-  // Close dropdown
-  const categoryMenu = document.getElementById('category-menu');
-  categoryMenu.classList.remove('active');
-  categoryBtn.classList.remove('active');
-
-  // Apply filter
-  applyFiltersAndSort();
 }
 
 // ==================== CATEGORY SELECTOR (FOR TASK CREATION) ====================
@@ -801,18 +751,30 @@ function displayTasks(tasks) {
   } else {
     emptyState.classList.remove('visible');
 
+    // Category icons mapping
+    const categoryIcons = {
+      work: '💼',
+      study: '📚',
+      health: '💪',
+      home: '🏠',
+      development: '🚀',
+      finance: '💰'
+    };
+
     tasks.forEach(taskData => {
       const li = document.createElement("div");
       li.className = "task-item" + (taskData.completed ? " completed" : "");
       li.dataset.taskId = taskData.id;
 
       const timestamp = taskData.created_at ? formatTimestamp(taskData.created_at) : '';
+      const categoryIcon = taskData.category ? categoryIcons[taskData.category] : '';
 
       li.innerHTML = `
         <label class="task-checkbox">
           <input type="checkbox" ${taskData.completed ? 'checked' : ''}>
           <span class="checkmark"></span>
         </label>
+        ${categoryIcon ? `<span class="task-category-icon">${categoryIcon}</span>` : ''}
         <div class="task-wrapper">
           <span class="task-content">${escapeHtml(taskData.text)}</span>
           ${timestamp ? `<span class="task-timestamp" data-timestamp="${taskData.created_at}">${timestamp}</span>` : ''}
@@ -1400,29 +1362,6 @@ document.addEventListener("DOMContentLoaded", async function() {
     toggleTasksBtn.addEventListener('click', toggleTasksVisibility);
   }
 
-  // Добавляем listeners для категорий
-  const categoryBtn = document.getElementById('category-btn');
-  if (categoryBtn) {
-    categoryBtn.addEventListener('click', toggleCategoryDropdown);
-  }
-
-  document.querySelectorAll('.category-menu-item').forEach(item => {
-    item.addEventListener('click', function() {
-      selectCategory(this.dataset.category);
-    });
-  });
-
-  // Закрытие dropdown по клику вне его
-  document.addEventListener('click', function(e) {
-    const categoryDropdown = document.querySelector('.category-dropdown');
-    if (categoryDropdown && !categoryDropdown.contains(e.target)) {
-      const categoryMenu = document.getElementById('category-menu');
-      const categoryBtn = document.getElementById('category-btn');
-      categoryMenu.classList.remove('active');
-      categoryBtn.classList.remove('active');
-    }
-  });
-
   // Добавляем listeners для селектора категорий при создании задач
   const categorySelectorBtn = document.getElementById('category-selector-btn');
   if (categorySelectorBtn) {
@@ -1446,17 +1385,6 @@ document.addEventListener("DOMContentLoaded", async function() {
 
   // Восстанавливаем состояние свернутых задач
   restoreTasksCollapsedState();
-
-  // Восстанавливаем состояние категории
-  if (currentCategory) {
-    document.querySelectorAll('.category-menu-item').forEach(item => {
-      if (item.dataset.category === currentCategory) {
-        item.classList.add('selected');
-      }
-    });
-    const categoryBtn = document.getElementById('category-btn');
-    categoryBtn.classList.add('active');
-  }
 
   const savedToken = localStorage.getItem('auth-token');
   const savedUser = localStorage.getItem('current-user');
