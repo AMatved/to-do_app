@@ -15,6 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
 
+// Trust proxy for Railway deployment (needed for rate limiting)
+app.set('trust proxy', 1);
+
 // ==================== MIDDLEWARE ====================
 // Безопасность HTTP заголовков
 app.use(helmet({
